@@ -1,0 +1,26 @@
+version: 1
+
+name: hvacAPI
+
+environments:
+  dev:
+    api:
+      type: apigateway
+      swagger: ./swagger.yml
+      description: A simple API for getting and updating the temperature of a sensor
+      dependencies:
+        - state
+        - subscriptions
+        - topic
+    state:
+      type: dynamodb
+      partition_key:
+        name: uuid
+        type: String
+    subscription:
+      type: dynamodb
+      partition_key:
+        name: sub_arn
+        type: String
+    topic:
+      type: sns

@@ -1,0 +1,225 @@
+swagger: '2.0'
+info:
+  version: "1.0.1"
+  title: temperatureSensorAPI
+  description: A simple API for getting and updating the temperature of a sensor
+schemes:
+ - https
+basePath: /dev
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: X-API-KEY
+security:
+  - ApiKeyAuth: []
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /temperatureSensor:
+    post:
+      description: Adds a new temperatureSensor 
+      parameters:
+        - name: area
+          in: body
+          description: Name of area where temperatureSensor  is located (e.g. Main Floor)
+          required: true
+          schema:
+            type: object
+            properties:
+              area:
+                type: string
+      responses:
+        200:
+          description: temperatureSensor device state with uuid
+          schema:
+            $ref: '#/definitions/State'
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: state
+    get:
+      description: Gives list of temperatureSensor s
+      responses:
+        200:
+          description: temperatureSensor s
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/State'
+      x-lambda-function: state
+        
+  '/temperatureSensor/{uuid}':
+    get:
+      description: Gets the state of an temperatureSensor 
+      parameters: 
+        - $ref: '#/parameters/UUID'
+      responses:
+        200:
+          description: temperatureSensor url
+          schema:
+            $ref: '#/definitions/State'
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: state
+
+    put:
+      description: Updates the state of an temperatureSensor 
+      parameters: 
+        - $ref: '#/parameters/UUID'
+        - name: state
+          in: body
+          description: temperatureSensor state
+          schema:
+            $ref: '#/definitions/State'
+      responses:
+        200:
+          description: Successfully updated temperatureSensor 
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: state
+    delete:
+      description: Delete an temperatureSensor  by id
+      parameters:
+          - $ref: '#/parameters/UUID'
+      responses:
+        200:
+          description: Successfully deleted temperatureSensor 
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: state
+  '/temperatureSensor/subscription':
+    get:
+      description: Gets all of the subscriptions to the temperatureSensor s
+      parameters: 
+        - $ref: '#/parameters/UUID'
+      responses:
+        200:
+          description: Subscriptions to temperature sensor
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Subscription'
+      x-lambda-function: subscription
+    post:
+      description: subscribe to an temperatureSensor 
+      parameters:
+        - $ref: '#/parameters/UUID'
+        - name: sub
+          in: body
+          description: subscription to the temperature sensor 
+          required: true
+          schema:
+            type: object
+            properties:
+              protocol:
+                type: string
+              endpoint:
+                type: string
+      responses:
+        200:
+          description: subscription
+          schema:
+            $ref: '#/definitions/Subscription'
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: subscription
+      
+  '/temperatureSensor/subscription/{sub_arn}':
+    get:
+      description: Gets a particular subscription
+      parameters:
+        - $ref: '#/parameters/UUID'
+        - $ref: '#/parameters/SUB_ARN'
+      responses:
+        200:
+          description: subscription
+          schema:
+            $ref: '#/definitions/Subscription'
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: subscription
+    delete:
+      description: Deletes a particular subscription
+      parameters:
+        - $ref: '#/parameters/UUID'
+        - $ref: '#/parameters/SUB_ARN'
+      responses:
+        200:
+          description: subscription
+          schema:
+            $ref: '#/definitions/Subscription'
+        400:
+          $ref: '#/responses/Error'
+      x-lambda-function: subscription
+      
+        
+definitions:
+  State:
+    description: temperatureSensor  state
+    type: object
+    properties:
+      uuid:
+        type: string
+      topic_arn:
+        type: string
+      area:
+        type: string
+      heater:
+        type: boolean
+      ac:
+        type: boolean
+      fan:
+        type: boolean
+      off_time:
+        type: integer
+      update_period:
+        type: integer
+          
+  Subscription:
+    type: object
+    properties:
+      sub_arn:
+        type: string
+      protocol: 
+        type: string
+      endpoint: 
+        type: string
+
+parameters:
+  UUID:
+    name: uuid
+    in: path
+    type: string
+    required: true
+    description: Id of temperatureSensor 
+  SUB_ARN:
+    name: sub_arn
+    in: path
+    type: string
+    required: true
+    description: ARN of the subscription
+
+responses:
+  Error:
+    description: Invalid request error
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          
+x-lambda-functions:
+  state:
+    runtime: python3.6
+    handler: state.lambda_handler
+    memory: 128
+    path_to_code: ./
+  subscription:
+    runtime: python3.6
+    handler: subscription.lambda_handler
+    memory: 128
+    path_to_code: ./
+  
+    

@@ -28,44 +28,44 @@ def state_table():
 def publish(state):
     sns = boto3.client('sns')
     sns.publish(
-        TargetArn=state['topic_arn'],
+        TargetArn=os.environ['TOPIC_TOPIC_ARN'],
         Message=json.dumps(state),
         MessageStructure='json')
 
 
-def get_hvac(uuid):
-    hvac = state_table().get_item(Key={'uuid': uuid})
+def get_temperature_sensor(uuid):
+    temperature_sensor = state_table().get_item(Key={'uuid': uuid})
     response = {
         'isBase64Encoded': 'false',
         'statusCode': 200,
-        'body': json.dumps(hvac['Item'], cls=DecimalEncoder)
+        'body': json.dumps(temperature_sensor['Item'], cls=DecimalEncoder)
     }
     return response
 
 
-def get_all_hvacs():
-    hvacs = state_table().scan()
+def get_all_temperature_sensors():
+    temperature_sensors = state_table().scan()
     response = {
         'isBase64Encoded': 'false',
         'statusCode': 200,
-        'body': json.dumps(hvacs['Items'], cls=DecimalEncoder)
+        'body': json.dumps(temperature_sensors['Items'], cls=DecimalEncoder)
     }
     return response
 
 
-def create_hvac(hvac_data):
-    if (not hvac_data['area'] or not isinstance(hvac_data['area'], str)):
+def create_temperature_sensor(temperature_sensor_data):
+    if ('area' not in temperature_sensor_data or not isinstance(temperature_sensor_data['area'], str)):
         raise Exception('Error. Must specify area.')
+    if 'temperature_scale' not in temperature_sensor_data:
+        temperature_sensor_data['temperature_scale'] = 'fahrenheit'
+    elif temperature_sensor_data['temperature_scale'] not in ['fahrenheit', 'celsius']:
+        raise Exception('Error. Temperature scale must be \'fahrenheit\' or \'celsius\'')
     uuid = Uuid().hex
-    topic_arn = sns().create_topic(Name='hvac-' + uuid)['TopicArn']
     state = {
         'uuid': uuid,
-        'topic_arn': topic_arn,
-        'area': hvac_data['area'],
-        'heater': False,
-        'ac': False,
-        'fan': False,
-        'off_time': 0,
+        'area': temperature_sensor_data['area'],
+        'temperature': 70,
+        'temperature_scale': temperature_sensor_data['temperature_scale'],
         'update_period': 30
     }
     state_table().put_item(Item=state)
@@ -77,28 +77,22 @@ def create_hvac(hvac_data):
     return response
 
 
-def update_hvac(uuid, hvac_data):
+def update_temperature_sensor(uuid, temperature_sensor_data):
     updateExpressions = []
     attributeValues = {}
-    if 'area' in hvac_data and isinstance(hvac_data['area'], str):
+    if 'area' in temperature_sensor_data and isinstance(temperature_sensor_data['area'], str):
         updateExpressions.append("area = :a")
-        attributeValues[':a'] = hvac_data['area']
-    if 'heater' in hvac_data and isinstance(hvac_data['heater'], bool):
-        updateExpressions.append("heater = :h")
-        attributeValues[':h'] = hvac_data['heater']
-    if 'ac' in hvac_data and isinstance(hvac_data['ac'], bool):
-        updateExpressions.append("ac = :c")
-        attributeValues[':c'] = hvac_data['heater']
-    if 'fan' in hvac_data and isinstance(hvac_data['fan'], bool):
-        updateExpressions.append("fan = :f")
-        attributeValues[':f'] = hvac_data['fan']
-    if 'off_time' in hvac_data and isinstance(hvac_data['off_time'], int):
-        updateExpressions.append("off_time = :o")
-        attributeValues[':o'] = hvac_data['off_time']
-    if ('update_period' in hvac_data and
-            isinstance(hvac_data['update_period'], int)):
+        attributeValues[':a'] = temperature_sensor_data['area']
+    if 'temperature' in temperature_sensor_data and isinstance(temperature_sensor_data['temperature'], int):
+        updateExpressions.append("temperature = :t")
+        attributeValues[':t'] = temperature_sensor_data['temperature']
+    if 'temperature_scale' in temperature_sensor_data and temperature_sensor_data['temperature_scale'] in ['fahrenheit', 'celsius']:
+        updateExpressions.append("temperature_scale = :s")
+        attributeValues[':s'] = temperature_sensor_data['temperature_scale']
+    if ('update_period' in temperature_sensor_data and
+            isinstance(temperature_sensor_data['update_period'], int)):
         updateExpressions.append("update_period = :u")
-        attributeValues[':u'] = hvac_data['update_period']
+        attributeValues[':u'] = temperature_sensor_data['update_period']
 
     if len(updateExpressions) < 1:
         raise Exception('Error. Invalid update request.')
@@ -121,13 +115,9 @@ def update_hvac(uuid, hvac_data):
     return response
 
 
-def delete_hvac(uuid):
-    # Delete hvac state
-    state = state_table().delete_item(
-        Key={'uuid': uuid},
-        ReturnValues="ALL_OLD")
-    # Delete topic and subscriptions
-    sns().delete(TargetArn=state['topic_arn'])
+def delete_temperature_sensor(uuid):
+    # Delete tempearture sensor state
+    state = state_table().delete_item(Key={'uuid': uuid})
     response = {
         "isBase64Encoded": "false",
         "statusCode": 200,
@@ -140,13 +130,13 @@ def lambda_handler(event, context):
     try:
         if event['httpMethod'] == "GET":
             if event['pathParameters'] and 'uuid' in event['pathParameters']:
-                return get_hvac(event['pathParameters']['uuid'])
+                return get_temperature_sensor(event['pathParameters']['uuid'])
             else:
-                return get_all_hvacs()
+                return get_all_temperature_sensors()
 
         elif event['httpMethod'] == "POST":
             if event['body'] and not event['pathParameters']:
-                return create_hvac(json.loads(event['body']))
+                return create_temperature_sensor(json.loads(event['body']))
             else:
                 raise Exception(
                     'Error. HTTP body required for POST to create hvac.')
@@ -154,12 +144,12 @@ def lambda_handler(event, context):
         elif event['httpMethod'] == "PUT":
             if (event['body'] and event['pathParameters'] and
                     'uuid' in event['pathParameters']):
-                return update_hvac(event['pathParameters']['uuid'],
+                return update_temperature_sensor(event['pathParameters']['uuid'],
                                    json.loads(event['body']))
 
         elif event['httpMethod'] == "DELETE":
             if event['pathParameters'] and 'uuid' in event['pathParameters']:
-                return delete_hvac(event['pathParameters']['uuid'])
+                return delete_temperature_sensor(event['pathParameters']['uuid'])
         else:
             raise Exception("Invalid HTTP method")
     except Exception as e:

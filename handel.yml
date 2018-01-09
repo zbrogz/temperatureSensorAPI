@@ -1,6 +1,6 @@
 version: 1
 
-name: hvacAPI
+name: temperatureSensorAPI
 
 environments:
   dev:
@@ -10,7 +10,7 @@ environments:
       description: A simple API for getting and updating the temperature of a sensor
       dependencies:
         - state
-        - subscriptions
+        - subscription
         - topic
     state:
       type: dynamodb
@@ -20,7 +20,7 @@ environments:
     subscription:
       type: dynamodb
       partition_key:
-        name: sub_arn
+        name: uuid
         type: String
     topic:
       type: sns

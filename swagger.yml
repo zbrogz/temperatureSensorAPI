@@ -20,11 +20,11 @@ produces:
 paths:
   /temperatureSensor:
     post:
-      description: Adds a new temperatureSensor 
+      description: Adds a new temperature sensor 
       parameters:
         - name: area
           in: body
-          description: Name of area where temperatureSensor  is located (e.g. Main Floor)
+          description: Name of area where temperature sensor is located (e.g. Main Floor)
           required: true
           schema:
             type: object
@@ -40,10 +40,10 @@ paths:
           $ref: '#/responses/Error'
       x-lambda-function: state
     get:
-      description: Gives list of temperatureSensor s
+      description: Gives list of temperature sensors
       responses:
         200:
-          description: temperatureSensor s
+          description: temperature sensors
           schema:
             type: array
             items:
@@ -52,12 +52,12 @@ paths:
         
   '/temperatureSensor/{uuid}':
     get:
-      description: Gets the state of an temperatureSensor 
+      description: Gets the state of a temperature sensor 
       parameters: 
         - $ref: '#/parameters/UUID'
       responses:
         200:
-          description: temperatureSensor url
+          description: temperature sensor state
           schema:
             $ref: '#/definitions/State'
         400:
@@ -65,47 +65,44 @@ paths:
       x-lambda-function: state
 
     put:
-      description: Updates the state of an temperatureSensor 
+      description: Updates the state of a temperature sensor 
       parameters: 
         - $ref: '#/parameters/UUID'
         - name: state
           in: body
-          description: temperatureSensor state
+          description: temperature sensor state
           schema:
             $ref: '#/definitions/State'
       responses:
         200:
-          description: Successfully updated temperatureSensor 
+          description: Successfully updated temperature sensor 
         400:
           $ref: '#/responses/Error'
       x-lambda-function: state
     delete:
-      description: Delete an temperatureSensor  by id
+      description: Delete a temperature sensor by id
       parameters:
           - $ref: '#/parameters/UUID'
       responses:
         200:
-          description: Successfully deleted temperatureSensor 
+          description: Successfully deleted temperature sensor 
         400:
           $ref: '#/responses/Error'
       x-lambda-function: state
   '/temperatureSensor/subscription':
     get:
-      description: Gets all of the subscriptions to the temperatureSensor s
-      parameters: 
-        - $ref: '#/parameters/UUID'
+      description: Gets all of the subscriptions to the temperature sensors
       responses:
         200:
-          description: Subscriptions to temperature sensor
+          description: Subscriptions to temperature sensors
           schema:
             type: array
             items:
               $ref: '#/definitions/Subscription'
       x-lambda-function: subscription
     post:
-      description: subscribe to an temperatureSensor 
+      description: subscribe to a temperature sensor 
       parameters:
-        - $ref: '#/parameters/UUID'
         - name: sub
           in: body
           description: subscription to the temperature sensor 
@@ -126,12 +123,11 @@ paths:
           $ref: '#/responses/Error'
       x-lambda-function: subscription
       
-  '/temperatureSensor/subscription/{sub_arn}':
+  '/temperatureSensor/subscription/{uuid}':
     get:
       description: Gets a particular subscription
       parameters:
         - $ref: '#/parameters/UUID'
-        - $ref: '#/parameters/SUB_ARN'
       responses:
         200:
           description: subscription
@@ -144,7 +140,6 @@ paths:
       description: Deletes a particular subscription
       parameters:
         - $ref: '#/parameters/UUID'
-        - $ref: '#/parameters/SUB_ARN'
       responses:
         200:
           description: subscription
@@ -157,30 +152,24 @@ paths:
         
 definitions:
   State:
-    description: temperatureSensor  state
+    description: temperature sensor state
     type: object
     properties:
       uuid:
         type: string
-      topic_arn:
-        type: string
       area:
         type: string
-      heater:
-        type: boolean
-      ac:
-        type: boolean
-      fan:
-        type: boolean
-      off_time:
+      temperature:
         type: integer
+      temperature_scale:
+        type: string
       update_period:
         type: integer
           
   Subscription:
     type: object
     properties:
-      sub_arn:
+      uuid:
         type: string
       protocol: 
         type: string
@@ -193,13 +182,7 @@ parameters:
     in: path
     type: string
     required: true
-    description: Id of temperatureSensor 
-  SUB_ARN:
-    name: sub_arn
-    in: path
-    type: string
-    required: true
-    description: ARN of the subscription
+    description: Id of temperatureSensor/subscirption
 
 responses:
   Error:

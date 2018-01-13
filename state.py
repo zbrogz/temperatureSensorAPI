@@ -24,13 +24,12 @@ def state_table():
     return boto3.resource('dynamodb').Table(os.environ['STATE_TABLE_NAME'])
 
 
-# Notifies subscribers of updates to the hvac controller
+# Notifies subscribers of updates to the temperature sensor
 def publish(state):
     sns = boto3.client('sns')
     sns.publish(
         TargetArn=os.environ['TOPIC_TOPIC_ARN'],
-        Message=json.dumps(state),
-        MessageStructure='json')
+        Message=json.dumps(state, cls=DecimalEncoder))
 
 
 def get_temperature_sensor(uuid):
@@ -97,16 +96,14 @@ def update_temperature_sensor(uuid, temperature_sensor_data):
     if len(updateExpressions) < 1:
         raise Exception('Error. Invalid update request.')
     updateExpressionStr = "set " + (",".join(updateExpressions))
-
-    update_reponse = state_table().update_item(
+    update_response = state_table().update_item(
         Key={'uuid': uuid},
         UpdateExpression=updateExpressionStr,
         ExpressionAttributeValues=attributeValues,
         ReturnValues="ALL_NEW")
-
     # Notify subscribers of state change
-    publish(update_reponse['Attributes'])
-
+    publish(update_response['Attributes'])
+    
     response = {
         "isBase64Encoded": "false",
         "statusCode": 200,

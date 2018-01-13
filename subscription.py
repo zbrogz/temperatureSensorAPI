@@ -57,7 +57,7 @@ def create_subscription(sub_data):
 
 
 def delete_subscription(uuid):
-    s = subscription_table().get_item(Key={'uuid': uuid})
+    s = subscription_table().get_item(Key={'uuid': uuid})['Item']
     subs = sns().list_subscriptions_by_topic(TopicArn=os.environ['TOPIC_TOPIC_ARN'])['Subscriptions']
     for sub in subs:
         if sub['Protocol'] == s['protocol'] and sub['Endpoint'] == s['endpoint']:

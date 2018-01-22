@@ -89,66 +89,6 @@ paths:
         400:
           $ref: '#/responses/Error'
       x-lambda-function: state
-  '/temperatureSensor/subscription':
-    get:
-      description: Gets all of the subscriptions to the temperature sensors
-      responses:
-        200:
-          description: Subscriptions to temperature sensors
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Subscription'
-      x-lambda-function: subscription
-    post:
-      description: subscribe to a temperature sensor 
-      parameters:
-        - name: sub
-          in: body
-          description: subscription to the temperature sensor 
-          required: true
-          schema:
-            type: object
-            properties:
-              protocol:
-                type: string
-              endpoint:
-                type: string
-      responses:
-        200:
-          description: subscription
-          schema:
-            $ref: '#/definitions/Subscription'
-        400:
-          $ref: '#/responses/Error'
-      x-lambda-function: subscription
-      
-  '/temperatureSensor/subscription/{uuid}':
-    get:
-      description: Gets a particular subscription
-      parameters:
-        - $ref: '#/parameters/UUID'
-      responses:
-        200:
-          description: subscription
-          schema:
-            $ref: '#/definitions/Subscription'
-        400:
-          $ref: '#/responses/Error'
-      x-lambda-function: subscription
-    delete:
-      description: Deletes a particular subscription
-      parameters:
-        - $ref: '#/parameters/UUID'
-      responses:
-        200:
-          description: subscription
-          schema:
-            $ref: '#/definitions/Subscription'
-        400:
-          $ref: '#/responses/Error'
-      x-lambda-function: subscription
-      
         
 definitions:
   State:
@@ -164,17 +104,7 @@ definitions:
       temperature_scale:
         type: string
       update_period:
-        type: integer
-          
-  Subscription:
-    type: object
-    properties:
-      uuid:
-        type: string
-      protocol: 
-        type: string
-      endpoint: 
-        type: string
+        type: integer          
 
 parameters:
   UUID:
@@ -182,7 +112,7 @@ parameters:
     in: path
     type: string
     required: true
-    description: Id of temperatureSensor/subscirption
+    description: Id of temperatureSensor
 
 responses:
   Error:
@@ -197,11 +127,6 @@ x-lambda-functions:
   state:
     runtime: python3.6
     handler: state.lambda_handler
-    memory: 128
-    path_to_code: ./
-  subscription:
-    runtime: python3.6
-    handler: subscription.lambda_handler
     memory: 128
     path_to_code: ./
   

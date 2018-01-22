@@ -10,17 +10,8 @@ environments:
       description: A simple API for getting and updating the temperature of a sensor
       dependencies:
         - state
-        - subscription
-        - topic
     state:
       type: dynamodb
       partition_key:
         name: uuid
         type: String
-    subscription:
-      type: dynamodb
-      partition_key:
-        name: uuid
-        type: String
-    topic:
-      type: sns

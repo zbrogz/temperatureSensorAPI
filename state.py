@@ -16,20 +16,8 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(o)
 
 
-def sns():
-    return boto3.client('sns')
-
-
 def state_table():
     return boto3.resource('dynamodb').Table(os.environ['STATE_TABLE_NAME'])
-
-
-# Notifies subscribers of updates to the temperature sensor
-def publish(state):
-    sns = boto3.client('sns')
-    sns.publish(
-        TargetArn=os.environ['TOPIC_TOPIC_ARN'],
-        Message=json.dumps(state, cls=DecimalEncoder))
 
 
 def get_temperature_sensor(uuid):
@@ -53,12 +41,15 @@ def get_all_temperature_sensors():
 
 
 def create_temperature_sensor(temperature_sensor_data):
-    if ('area' not in temperature_sensor_data or not isinstance(temperature_sensor_data['area'], str)):
+    if ('area' not in temperature_sensor_data or
+            not isinstance(temperature_sensor_data['area'], str)):
         raise Exception('Error. Must specify area.')
     if 'temperature_scale' not in temperature_sensor_data:
         temperature_sensor_data['temperature_scale'] = 'fahrenheit'
-    elif temperature_sensor_data['temperature_scale'] not in ['fahrenheit', 'celsius']:
-        raise Exception('Error. Temperature scale must be \'fahrenheit\' or \'celsius\'')
+    elif (temperature_sensor_data['temperature_scale'] not in
+            ['fahrenheit', 'celsius']):
+        raise Exception(
+            'Error. Temperature scale must be \'fahrenheit\' or \'celsius\'')
     uuid = Uuid().hex
     state = {
         'uuid': uuid,
@@ -79,13 +70,17 @@ def create_temperature_sensor(temperature_sensor_data):
 def update_temperature_sensor(uuid, temperature_sensor_data):
     updateExpressions = []
     attributeValues = {}
-    if 'area' in temperature_sensor_data and isinstance(temperature_sensor_data['area'], str):
+    if ('area' in temperature_sensor_data and
+            isinstance(temperature_sensor_data['area'], str)):
         updateExpressions.append("area = :a")
         attributeValues[':a'] = temperature_sensor_data['area']
-    if 'temperature' in temperature_sensor_data and isinstance(temperature_sensor_data['temperature'], int):
+    if ('temperature' in temperature_sensor_data and
+            isinstance(temperature_sensor_data['temperature'], int)):
         updateExpressions.append("temperature = :t")
         attributeValues[':t'] = temperature_sensor_data['temperature']
-    if 'temperature_scale' in temperature_sensor_data and temperature_sensor_data['temperature_scale'] in ['fahrenheit', 'celsius']:
+    if ('temperature_scale' in temperature_sensor_data and
+            temperature_sensor_data['temperature_scale'] in
+            ['fahrenheit', 'celsius']):
         updateExpressions.append("temperature_scale = :s")
         attributeValues[':s'] = temperature_sensor_data['temperature_scale']
     if ('update_period' in temperature_sensor_data and
@@ -96,29 +91,26 @@ def update_temperature_sensor(uuid, temperature_sensor_data):
     if len(updateExpressions) < 1:
         raise Exception('Error. Invalid update request.')
     updateExpressionStr = "set " + (",".join(updateExpressions))
-    update_response = state_table().update_item(
+    state_table().update_item(
         Key={'uuid': uuid},
         UpdateExpression=updateExpressionStr,
-        ExpressionAttributeValues=attributeValues,
-        ReturnValues="ALL_NEW")
-    # Notify subscribers of state change
-    publish(update_response['Attributes'])
-    
+        ExpressionAttributeValues=attributeValues)
+
     response = {
         "isBase64Encoded": "false",
         "statusCode": 200,
-        "body": "{\"message\": \"Hvac updated\"}"
+        "body": "{\"message\": \"Temperature sensor updated\"}"
     }
     return response
 
 
 def delete_temperature_sensor(uuid):
     # Delete tempearture sensor state
-    state = state_table().delete_item(Key={'uuid': uuid})
+    state_table().delete_item(Key={'uuid': uuid})
     response = {
         "isBase64Encoded": "false",
         "statusCode": 200,
-        "body": "{\"message\": \"Hvac deleted.\"}"
+        "body": "{\"message\": \"Temperature sensor deleted.\"}"
     }
     return response
 
@@ -130,23 +122,22 @@ def lambda_handler(event, context):
                 return get_temperature_sensor(event['pathParameters']['uuid'])
             else:
                 return get_all_temperature_sensors()
-
         elif event['httpMethod'] == "POST":
             if event['body'] and not event['pathParameters']:
                 return create_temperature_sensor(json.loads(event['body']))
             else:
-                raise Exception(
-                    'Error. HTTP body required for POST to create hvac.')
-
+                raise Exception('Error. HTTP body required for \
+                                POST to create temperature sensor.')
         elif event['httpMethod'] == "PUT":
             if (event['body'] and event['pathParameters'] and
                     'uuid' in event['pathParameters']):
-                return update_temperature_sensor(event['pathParameters']['uuid'],
-                                   json.loads(event['body']))
-
+                return update_temperature_sensor(
+                    event['pathParameters']['uuid'],
+                    json.loads(event['body']))
         elif event['httpMethod'] == "DELETE":
             if event['pathParameters'] and 'uuid' in event['pathParameters']:
-                return delete_temperature_sensor(event['pathParameters']['uuid'])
+                return delete_temperature_sensor(
+                    event['pathParameters']['uuid'])
         else:
             raise Exception("Invalid HTTP method")
     except Exception as e:

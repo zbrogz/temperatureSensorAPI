@@ -25,6 +25,7 @@ def get_temperature_sensor(uuid):
     response = {
         'isBase64Encoded': 'false',
         'statusCode': 200,
+        'headers': {'Access-Control-Allow-Origin': '*'},
         'body': json.dumps(temperature_sensor['Item'], cls=DecimalEncoder)
     }
     return response
@@ -35,6 +36,7 @@ def get_all_temperature_sensors():
     response = {
         'isBase64Encoded': 'false',
         'statusCode': 200,
+        'headers': {'Access-Control-Allow-Origin': '*'},
         'body': json.dumps(temperature_sensors['Items'], cls=DecimalEncoder)
     }
     return response
@@ -62,6 +64,7 @@ def create_temperature_sensor(temperature_sensor_data):
     response = {
         'isBase64Encoded': 'false',
         'statusCode': 200,
+        'headers': {'Access-Control-Allow-Origin': '*'},
         'body': json.dumps(state)
     }
     return response
@@ -91,15 +94,18 @@ def update_temperature_sensor(uuid, temperature_sensor_data):
     if len(updateExpressions) < 1:
         raise Exception('Error. Invalid update request.')
     updateExpressionStr = "set " + (",".join(updateExpressions))
-    state_table().update_item(
+    temperature_sensor = state_table().update_item(
         Key={'uuid': uuid},
         UpdateExpression=updateExpressionStr,
-        ExpressionAttributeValues=attributeValues)
+        ExpressionAttributeValues=attributeValues,
+        ReturnValues='ALL_NEW')
 
     response = {
         "isBase64Encoded": "false",
         "statusCode": 200,
-        "body": "{\"message\": \"Temperature sensor updated\"}"
+        'headers': {'Access-Control-Allow-Origin': '*'},
+        'body': json.dumps(temperature_sensor['Attributes'],
+                           cls=DecimalEncoder)
     }
     return response
 
@@ -110,6 +116,7 @@ def delete_temperature_sensor(uuid):
     response = {
         "isBase64Encoded": "false",
         "statusCode": 200,
+        'headers': {'Access-Control-Allow-Origin': '*'},
         "body": "{\"message\": \"Temperature sensor deleted.\"}"
     }
     return response
@@ -144,6 +151,7 @@ def lambda_handler(event, context):
         response = {
             "isBase64Encoded": "false",
             "statusCode": 400,
+            'headers': {'Access-Control-Allow-Origin': '*'},
             "body": "{\"errorMessage\": \"" + e.args[0] + ".\"}"
         }
         return response

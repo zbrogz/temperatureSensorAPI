@@ -6,19 +6,56 @@ info:
 schemes:
  - https
 basePath: /dev
-securityDefinitions:
-  ApiKeyAuth:
-    type: apiKey
-    in: header
-    name: X-API-KEY
-security:
-  - ApiKeyAuth: []
+# securityDefinitions:
+#   api_key:
+#     type: "apiKey"
+#     in: header
+#     name: "x-api-key"
+# security:
+#   - api_key: []
 consumes:
   - application/json
 produces:
   - application/json
 paths:
   /temperatureSensor:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - CORS
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          "default":
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods : "'*'"
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+      responses:
+        200:
+          description: Default response for CORS method
+          headers:
+            Access-Control-Allow-Headers:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
     post:
       description: Adds a new temperature sensor 
       parameters:
@@ -34,6 +71,7 @@ paths:
       responses:
         200:
           description: temperatureSensor device state with uuid
+          $ref: '#/responses/headers'
           schema:
             $ref: '#/definitions/State'
         400:
@@ -44,13 +82,51 @@ paths:
       responses:
         200:
           description: temperature sensors
+          $ref: '#/responses/headers'
           schema:
             type: array
             items:
               $ref: '#/definitions/State'
       x-lambda-function: state
         
-  '/temperatureSensor/{uuid}':
+  /temperatureSensor/{uuid}:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      tags:
+        - CORS
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          "default":
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods : "'*'"
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+      responses:
+        200:
+          description: Default response for CORS method
+          headers:
+            Access-Control-Allow-Headers:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
     get:
       description: Gets the state of a temperature sensor 
       parameters: 
@@ -58,6 +134,7 @@ paths:
       responses:
         200:
           description: temperature sensor state
+          $ref: '#/responses/headers'
           schema:
             $ref: '#/definitions/State'
         400:
@@ -76,6 +153,7 @@ paths:
       responses:
         200:
           description: Successfully updated temperature sensor 
+          $ref: '#/responses/headers'
         400:
           $ref: '#/responses/Error'
       x-lambda-function: state
@@ -86,6 +164,7 @@ paths:
       responses:
         200:
           description: Successfully deleted temperature sensor 
+          $ref: '#/responses/headers'
         400:
           $ref: '#/responses/Error'
       x-lambda-function: state
@@ -115,8 +194,16 @@ parameters:
     description: Id of temperatureSensor
 
 responses:
+  headers:
+    Access-Control-Allow-Headers:
+      type: "string"
+    Access-Control-Allow-Methods:
+      type: "string"
+    Access-Control-Allow-Origin:
+      type: "string"
   Error:
     description: Invalid request error
+    $ref: '#/responses/headers'    
     schema:
       type: object
       properties:

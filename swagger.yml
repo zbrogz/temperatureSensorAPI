@@ -18,7 +18,7 @@ consumes:
 produces:
   - application/json
 paths:
-  /temperatureSensor:
+  /:
     options:
       summary: CORS support
       description: |
@@ -89,7 +89,7 @@ paths:
               $ref: '#/definitions/State'
       x-lambda-function: state
         
-  /temperatureSensor/{uuid}:
+  /{uuid}:
     options:
       summary: CORS support
       description: |
